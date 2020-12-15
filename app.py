@@ -4,7 +4,7 @@ app = Flask(__name__)
 def hello():
     """ Regresa los parametros HTTP obtenidos. """
     who = request.args.get("who", "World")
-    return f"Hello {who}!\n"
+    return f"Hola {who}!\n"
 
     # Usar solo cuando se corre localmente. cuando se despliegue en Cloud Run,
     # un servidor de preosesos como Gunicorn sirve para el app.
