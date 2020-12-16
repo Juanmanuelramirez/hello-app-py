@@ -1,0 +1,36 @@
+# Este paso clona el repositorio kubernetes-cd-env
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Clone env repository
+  entrypoint: /bin/sh
+  args:
+  - '-c'
+  - |
+    gcloud source repos clone kubernetes-cd-env && \
+    cd kubernetes-cd-env && \
+    git checkout candidate && \
+    git config user.email $(gcloud auth list --filter=status:ACTIVE --format='value(account)')
+
+# Este paso genera el nuevo archivo manifest
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Generate manifest
+  entrypoint: /bin/sh
+  args:
+  - '-c'
+  - |
+     sed "s/GOOGLE_CLOUD_PROJECT/${PROJECT_ID}/g" kubernetes.yaml.tpl | \
+     sed "s/COMMIT_SHA/${SHORT_SHA}/g" > kubernetes-cd-env/kubernetes.yaml
+
+# Este paso realiza en push del archivo manifest en kubernetes-cd-env
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: Push manifest
+  entrypoint: /bin/sh
+  args:
+  - '-c'
+  - |
+    set -x && \
+    cd kubernetes-cd-env && \
+    git add kubernetes.yaml && \
+    git commit -m "Deploying image gcr.io/${PROJECT_ID}/kubernetes-cd:${SHORT_SHA}
+    Built from commit ${COMMIT_SHA} of repository kubernetes-cd-app
+    Author: $(git log --format='%an <%ae>' -n 1 HEAD)" && \
+    git push origin candidate
